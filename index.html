@@ -1,11 +1,39 @@
-// ==========================================
-// RT Advanced Multi-Indicator Scanner & Auto-Trader (Updated)
-// ==========================================
-(function createDraggableRTIcon() {
-    if (document.getElementById("rt-scanner-btn")) return;
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotex AI Signal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: #1a1e29;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+        }
+        .btn-open {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #0faf59;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(15, 175, 89, 0.4);
+        }
 
-    var style = document.createElement("style");
-    style.innerHTML = `
+        /* RT Button Styles */
         #rt-scanner-btn {
             position: fixed;
             top: 40%;
@@ -22,7 +50,7 @@
             align-items: center;
             justify-content: center;
             cursor: move;
-            box-shadow: 0 0 15px rgba(15, 175, 89, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 15px rgba(15, 175, 89, 0.8);
             z-index: 999999;
             user-select: none;
             touch-action: none;
@@ -30,7 +58,6 @@
         .rt-scanning {
             animation: rt-pulse 0.5s infinite alternate;
             border-color: #ffcc00 !important;
-            box-shadow: 0 0 25px rgba(255, 204, 0, 0.9) !important;
         }
         .rt-locked {
             background: linear-gradient(135deg, #555555, #222222) !important;
@@ -41,197 +68,117 @@
             0% { transform: scale(1); }
             100% { transform: scale(1.15); }
         }
-        #rt-scan-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15, 175, 89, 0.08);
-            border: 3px solid #0faf59;
-            box-sizing: border-box;
-            pointer-events: none;
-            z-index: 999998;
-            display: none;
-        }
-    `;
-    document.head.appendChild(style);
+    </style>
+</head>
+<body>
 
-    var btn = document.createElement("div");
-    btn.id = "rt-scanner-btn";
-    btn.innerText = "RT";
-    document.body.appendChild(btn);
+    <div class="container">
+        <h2>QUOTEX MARKET SCANNER</h2>
+        <p>ট্রেডিং প্ল্যাটফর্ম চালু করতে নিচের বাটনে ক্লিক করুন:</p>
+        <button class="btn-open" onclick="openQuotex()">Open Market</button>
+    </div>
 
-    var overlay = document.createElement("div");
-    overlay.id = "rt-scan-overlay";
-    document.body.appendChild(overlay);
+    <!-- RT Floating Button -->
+    <div id="rt-scanner-btn">RT</div>
 
-    let isAuthorized = false;
-    let isLocked = false;
+    <script>
+        const targetUrl = "https://market-qx.trade/sign-up/?lid=960233";
+        let isChartOpened = false;
+        let isAuthorized = false;
+        let isLocked = false;
 
-    // Draggable Functionality
-    var isDragging = false, hasMoved = false, offsetX, offsetY;
-
-    function startDrag(e) {
-        isDragging = true;
-        hasMoved = false;
-        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        offsetX = clientX - btn.getBoundingClientRect().left;
-        offsetY = clientY - btn.getBoundingClientRect().top;
-    }
-
-    function moveDrag(e) {
-        if (!isDragging) return;
-        hasMoved = true;
-        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        btn.style.left = (clientX - offsetX) + "px";
-        btn.style.top = (clientY - offsetY) + "px";
-        btn.style.right = "auto";
-    }
-
-    function stopDrag() { isDragging = false; }
-
-    btn.addEventListener("mousedown", startDrag);
-    btn.addEventListener("mousemove", moveDrag);
-    window.addEventListener("mouseup", stopDrag);
-    btn.addEventListener("touchstart", startDrag, { passive: true });
-    btn.addEventListener("touchmove", moveDrag, { passive: true });
-    window.addEventListener("touchend", stopDrag);
-
-    // চার্ট বা ক্যান্ডেল ওপেন আছে কিনা চেক করার ফাংশন
-    function isChartOpen() {
-        var priceEl = fetchLivePrice();
-        var canvasElements = document.querySelectorAll('canvas');
-        return priceEl !== null || canvasElements.length > 0;
-    }
-
-    // ১. চার্ট/প্ল্যাটফর্ম থেকে প্রাইস ডাটা এক্সট্র্যাক্ট করা
-    function fetchLivePrice() {
-        var selectors = ['.current-price', '.price', '[class*="price"]', '[class*="value"]'];
-        for (var s of selectors) {
-            var el = document.querySelector(s);
-            if (el && el.innerText) {
-                var cleanPrice = parseFloat(el.innerText.replace(/[^0-9.]/g, ''));
-                if (!isNaN(cleanPrice) && cleanPrice > 0) return cleanPrice;
-            }
-        }
-        return null;
-    }
-
-    // ২. ইন্ডিকেটর ও সিন্ডিকেট কনফার্মেশন প্রসেসর
-    function scanAndAnalyze() {
-        var callScore = 0;
-        var putScore = 0;
-        var currentPrice = fetchLivePrice();
-
-        if (currentPrice) {
-            var dev = currentPrice * 0.01;
-            var upperEnv = currentPrice + dev;
-            var lowerEnv = currentPrice - dev;
-            if (currentPrice <= lowerEnv) callScore += 3;
-            else if (currentPrice >= upperEnv) putScore += 3;
-
-            var stochVal = ((currentPrice - lowerEnv) / (upperEnv - lowerEnv)) * 100;
-            if (stochVal <= 20) callScore += 3;
-            else if (stochVal >= 80) putScore += 3;
-
-            if (currentPrice > lowerEnv) callScore += 2;
-            else putScore += 2;
-
-            if (Math.floor(currentPrice * 100) % 2 === 0) callScore += 1;
-            else putScore += 1;
-
-            if (stochVal <= 30) callScore += 2;
-            else if (stochVal >= 70) putScore += 2;
-
-            if (currentPrice > (lowerEnv + dev / 2)) callScore += 2;
-            else putScore += 2;
-
-            if (callScore > putScore) callScore += 1;
-            else putScore += 1;
-        } else {
-            var sec = new Date().getSeconds();
-            if (sec % 2 === 0) callScore += 5;
-            else putScore += 5;
+        function openQuotex() {
+            window.open(targetUrl, "_blank");
+            isChartOpened = true;
         }
 
-        return callScore >= putScore;
-    }
+        const btn = document.getElementById("rt-scanner-btn");
 
-    // ৩. স্ক্যানার ট্রিগার ও ট্রেড এক্সিকিউশন
-    btn.addEventListener("click", function() {
-        if (hasMoved || btn.classList.contains("rt-scanning") || isLocked) return;
+        // Draggable Functionality
+        let isDragging = false, hasMoved = false, offsetX, offsetY;
 
-        // প্রিমিয়াম এক্সেস চেক
-        if (!isAuthorized) {
-            let userKey = prompt("PREMIUM Access key 🔐");
-            if (userKey === "MT") {
-                isAuthorized = true;
-                alert("Access Granted Successfully!");
-            } else {
-                alert("Invalid Access Key! Please enter the correct key.");
+        function startDrag(e) {
+            isDragging = true;
+            hasMoved = false;
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            offsetX = clientX - btn.getBoundingClientRect().left;
+            offsetY = clientY - btn.getBoundingClientRect().top;
+        }
+
+        function moveDrag(e) {
+            if (!isDragging) return;
+            hasMoved = true;
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            btn.style.left = (clientX - offsetX) + "px";
+            btn.style.top = (clientY - offsetY) + "px";
+            btn.style.right = "auto";
+        }
+
+        function stopDrag() { isDragging = false; }
+
+        btn.addEventListener("mousedown", startDrag);
+        btn.addEventListener("mousemove", moveDrag);
+        window.addEventListener("mouseup", stopDrag);
+        btn.addEventListener("touchstart", startDrag, { passive: true });
+        btn.addEventListener("touchmove", moveDrag, { passive: true });
+        window.addEventListener("touchend", stopDrag);
+
+        // RT Button Click Actions
+        btn.addEventListener("click", function() {
+            if (hasMoved || btn.classList.contains("rt-scanning") || isLocked) return;
+
+            // ১. চার্ট ওপেন না থাকলে মেসেজ
+            if (!isChartOpened) {
+                alert("QUOTEX MARKET OPEN");
                 return;
             }
-        }
 
-        // মার্কেট বা চার্ট ওপেন না থাকলে মেসেজ দেখানো
-        if (!isChartOpen()) {
-            alert("QUOTEX MARKET OPEN");
-            return;
-        }
-
-        btn.classList.add("rt-scanning");
-        overlay.style.display = "block";
-        btn.innerText = "...s";
-
-        // ৩ থেকে ৫ সেকেন্ড স্ক্যানিং করা (এখানে ৪ সেকেন্ড নির্ধারণ করা হয়েছে)
-        setTimeout(function() {
-            btn.classList.remove("rt-scanning");
-            overlay.style.display = "none";
-            btn.innerText = "RT";
-
-            var isCall = scanAndAnalyze();
-
-            var upBtn = document.querySelector('button.btn-green, .call-btn, button[class*="up"], button[class*="high"], .button-call');
-            var downBtn = document.querySelector('button.btn-red, .put-btn, button[class*="down"], button[class*="low"], .button-put');
-
-            if (isCall && upBtn) {
-                upBtn.click();
-            } else if (!isCall && downBtn) {
-                downBtn.click();
-            } else {
-                var allButtons = document.querySelectorAll("button");
-                for (var b of allButtons) {
-                    var txt = b.innerText.toUpperCase();
-                    if (isCall && (txt.includes("UP") || txt.includes("CALL") || txt.includes("BUY") || txt.includes("HIGHER"))) {
-                        b.click();
-                        break;
-                    }
-                    if (!isCall && (txt.includes("DOWN") || txt.includes("PUT") || txt.includes("SELL") || txt.includes("LOWER"))) {
-                        b.click();
-                        break;
-                    }
+            // ২. প্রিমিয়াম এক্সেস কী চেক
+            if (!isAuthorized) {
+                let userKey = prompt("PREMIUM Access key 🔐");
+                if (userKey === "MT") {
+                    isAuthorized = true;
+                    alert("Access Granted Successfully!");
+                } else {
+                    alert("Invalid Access Key!");
+                    return;
                 }
             }
 
-            // সিগন্যাল পাওয়ার পর ২ মিনিট (১২০ সেকেন্ড) বাটন লক করা
-            isLocked = true;
-            btn.classList.add("rt-locked");
-            let timeLeft = 120;
-            
-            let lockInterval = setInterval(function() {
-                let mins = Math.floor(timeLeft / 60);
-                let secs = timeLeft % 60;
-                btn.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-                timeLeft--;
+            // ৩. ৩-৫ সেকেন্ড স্ক্যানিং
+            btn.classList.add("rt-scanning");
+            btn.innerText = "...";
 
-                if (timeLeft < 0) {
-                    clearInterval(lockInterval);
-                    isLocked = false;
-                    btn.classList.remove("rt-locked");
-                    btn.innerText = "RT";
-                }
-            }, 1000);
+            setTimeout(function() {
+                btn.classList.remove("rt-scanning");
+                
+                // র্যান্ডম UP/DOWN বিশ্লেষণ সিগন্যাল
+                const signal = Math.random() > 0.5 ? "CALL (UP) ⬆️" : "PUT (DOWN) ⬇️";
+                alert("Signal Generated: " + signal);
 
-        }, 4000); // ৪ সেকেন্ড স্ক্যানিং টাইম
-    });
-})();
+                // ৪. ২ মিনিট লক
+                isLocked = true;
+                btn.classList.add("rt-locked");
+                let timeLeft = 120;
+
+                let lockInterval = setInterval(function() {
+                    let mins = Math.floor(timeLeft / 60);
+                    let secs = timeLeft % 60;
+                    btn.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    timeLeft--;
+
+                    if (timeLeft < 0) {
+                        clearInterval(lockInterval);
+                        isLocked = false;
+                        btn.classList.remove("rt-locked");
+                        btn.innerText = "RT";
+                    }
+                }, 1000);
+
+            }, 4000);
+        });
+    </script>
+</body>
+</html>
