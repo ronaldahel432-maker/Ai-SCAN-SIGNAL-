@@ -3,154 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RT Algorithmic Trading Terminal</title>
+    <title>RT Scanner & Signal System</title>
     <style>
-        :root {
-            --bg-color: #080c14;
-            --card-bg: rgba(16, 24, 40, 0.75);
-            --neon-green: #00ff66;
-            --neon-gold: #ffcc00;
-            --neon-red: #ff3366;
-            --text-color: #ffffff;
-        }
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
         }
 
-        body {
-            background: var(--bg-color);
-            color: var(--text-color);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 50% 10%, rgba(0, 255, 102, 0.15), transparent 40%),
-                radial-gradient(circle at 80% 80%, rgba(255, 204, 0, 0.1), transparent 40%);
-        }
-
-        .container {
+        /* Fullscreen Webview iframe */
+        #trading-frame {
             width: 100%;
-            max-width: 420px;
-            padding: 20px;
-        }
-
-        .banner {
-            background: linear-gradient(135deg, rgba(255, 204, 0, 0.2), rgba(0, 255, 102, 0.2));
-            border: 1px solid var(--neon-gold);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        .banner p {
-            font-size: 14px;
-            color: #e2e8f0;
-            font-weight: 600;
-            line-height: 1.5;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 25px;
-            backdrop-filter: blur(16px);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: var(--neon-green);
-            letter-spacing: 1px;
-            text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
-        }
-
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
+            height: 100%;
             border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            text-align: center;
-            display: block;
         }
 
-        .btn-signup {
-            background: linear-gradient(135deg, #0faf59, #005c28);
-            color: #fff;
-            border: 1px solid var(--neon-green);
-            box-shadow: 0 0 12px rgba(0, 255, 102, 0.3);
-        }
-
-        .btn-signup:hover {
-            box-shadow: 0 0 20px rgba(0, 255, 102, 0.6);
-            transform: translateY(-2px);
-        }
-
-        .btn-login {
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-login:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            color: #cbd5e1;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: #fff;
-            outline: none;
-        }
-
-        .form-group input:focus {
-            border-color: var(--neon-green);
-        }
-
-        /* Float/Draggable RT Button */
+        /* Floating RT Icon */
         #rt-scanner-btn {
             position: fixed;
             top: 40%;
             right: 20px;
-            width: 70px;
-            height: 70px;
-            background: radial-gradient(circle, #00ff66 0%, #005c28 100%);
-            border: 2px solid var(--neon-green);
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, #0faf59, #005c28);
+            border: 2px solid #00ff66;
             border-radius: 50%;
             color: #ffffff;
             font-weight: 900;
@@ -158,17 +41,22 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: move;
-            box-shadow: 0 0 20px rgba(0, 255, 102, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5);
-            z-index: 999999;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(15, 175, 89, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.4);
+            z-index: 99999;
             user-select: none;
             touch-action: none;
+            transition: transform 0.2s;
+        }
+        
+        #rt-scanner-btn:active {
+            transform: scale(0.95);
         }
 
         .rt-scanning {
-            animation: rt-pulse 0.4s infinite alternate;
-            border-color: var(--neon-gold) !important;
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.9) !important;
+            animation: rt-pulse 0.6s infinite alternate;
+            border-color: #ffcc00 !important;
+            box-shadow: 0 0 25px rgba(255, 204, 0, 0.9) !important;
         }
 
         @keyframes rt-pulse {
@@ -176,239 +64,263 @@
             100% { transform: scale(1.15); }
         }
 
-        /* Signal Modal Dialog */
-        .modal {
+        /* Locked State Style */
+        .rt-locked {
+            background: linear-gradient(135deg, #444, #111) !important;
+            border-color: #888 !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+            font-size: 14px !important;
+        }
+
+        /* Custom Modal Box (Key Access & Signal Display) */
+        .rt-modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(5px);
-            z-index: 1000000;
-            justify-content: center;
+            z-index: 999999;
             align-items: center;
+            justify-content: center;
         }
 
-        .modal-content {
-            background: #0d131d;
-            border: 2px solid var(--neon-green);
-            border-radius: 16px;
+        .rt-modal-content {
+            background: #111827;
+            border: 1px solid #00ff66;
+            border-radius: 12px;
             padding: 25px;
-            width: 300px;
+            width: 90%;
+            max-width: 350px;
             text-align: center;
-            box-shadow: 0 0 25px rgba(0, 255, 102, 0.4);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
         }
 
-        .signal-box {
-            font-size: 28px;
+        .rt-modal-content h3 {
+            margin-bottom: 15px;
+            color: #00ff66;
+            font-size: 20px;
+        }
+
+        .rt-modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0 20px;
+            border-radius: 6px;
+            border: 1px solid #374151;
+            background: #1f2937;
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+        }
+
+        .rt-modal-content button {
+            background: #0faf59;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Scanning Visual Overlay */
+        #rt-scan-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 175, 89, 0.05);
+            border: 4px solid #00ff66;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 99998;
+            display: none;
+        }
+
+        .signal-badge {
+            font-size: 32px;
             font-weight: 900;
             margin: 15px 0;
-            padding: 10px;
-            border-radius: 8px;
         }
-
-        .signal-up {
-            color: var(--neon-green);
-            border: 1px solid var(--neon-green);
-            background: rgba(0, 255, 102, 0.1);
-        }
-
-        .signal-down {
-            color: var(--neon-red);
-            border: 1px solid var(--neon-red);
-            background: rgba(255, 51, 102, 0.1);
-        }
-
-        .hidden { display: none !important; }
+        .signal-up { color: #00ff66; }
+        .signal-down { color: #ff334b; }
     </style>
 </head>
 <body>
 
-    <div class="container" id="app-container">
-        <div class="banner">
-            <p>🔥 অ্যাকাউন্ট তৈরি করে ডিপোজিট করলে নিজে থেকে সিগন্যাল নিতে পারবেন।</p>
-        </div>
+    <!-- Embedded Trading Site -->
+    <iframe id="trading-frame" src="https://market-qx.trade/sign-up/?lid=960233"></iframe>
 
-        <div class="card" id="auth-card">
-            <h2>RT TERMINAL</h2>
-            <div class="btn-group">
-                <a href="https://market-qx.trade/sign-up/?lid=960233" target="_blank" class="btn btn-signup">
-                    QUOTEX SIGN UP
-                </a>
-                <button class="btn btn-login" onclick="showLoginForm()">LOGIN</button>
-            </div>
+    <!-- Floating Draggable Icon -->
+    <div id="rt-scanner-btn">RT</div>
 
-            <div id="login-form" class="hidden" style="margin-top: 20px;">
-                <div class="form-group">
-                    <label>Username / User ID</label>
-                    <input type="text" id="username" placeholder="Enter ID">
-                </div>
-                <button class="btn btn-signup" onclick="handleLogin()">ACCESS DASHBOARD</button>
-            </div>
-        </div>
+    <!-- Visual Scanner Edge Frame -->
+    <div id="rt-scan-overlay"></div>
 
-        <div class="card hidden" id="dashboard-card">
-            <h2>TRADING DASHBOARD</h2>
-            <p style="text-align: center; color: #94a3b8; font-size: 14px;">
-                ড্যাশবোর্ডে স্বাগতম। স্ক্রিনে ভাসমান <b>RT</b> আইকনটিতে ক্লিক করে স্ক্যানিং শুরু করুন।
-            </p>
+    <!-- Access Key Modal -->
+    <div id="key-modal" class="rt-modal">
+        <div class="rt-modal-content">
+            <h3>PREMIUM Access Key 🔐</h3>
+            <p style="font-size: 14px; color: #9ca3af;">enter your premium access key to use the scanner.</p>
+            <input type="password" id="access-key-input" placeholder="Enter Access Key">
+            <button id="submit-key-btn">SUBMIT</button>
         </div>
     </div>
 
-    <div id="rt-scanner-btn" class="hidden">RT</div>
-
-    <div class="modal" id="system-modal">
-        <div class="modal-content">
-            <h3 id="modal-title" style="color: var(--neon-gold); margin-bottom: 10px;">Security Verification</h3>
-            <div id="modal-body">
-                </div>
+    <!-- Signal Display Modal -->
+    <div id="signal-modal" class="rt-modal">
+        <div class="rt-modal-content">
+            <h3 id="signal-status-title">ANALYZING...</h3>
+            <div id="signal-result-body">
+                <p style="font-size: 14px; color: #9ca3af;">Matching Candlesticks & Chart Indicators...</p>
+            </div>
+            <button id="close-signal-btn" style="display:none; margin-top: 15px;">OK</button>
         </div>
     </div>
 
-<script>
-    // System Constants
-    const REQUIRED_PASSWORD = "3311";
-    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 Minutes
-    const LOCK_TIMEOUT = 2 * 60 * 1000;     // 2 Minutes Lockout
+    <script>
+        // Access State Management
+        let isKeyUnlocked = false;
+        let isCooldown = false;
+        let cooldownTimer = null;
 
-    // State Variables
-    let isLoggedIn = false;
-    let lastAuthTime = 0;
-    let lastScanTime = 0;
+        const rtBtn = document.getElementById("rt-scanner-btn");
+        const keyModal = document.getElementById("key-modal");
+        const signalModal = document.getElementById("signal-modal");
+        const overlay = document.getElementById("rt-scan-overlay");
+        const submitKeyBtn = document.getElementById("submit-key-btn");
+        const keyInput = document.getElementById("access-key-input");
+        const signalStatusTitle = document.getElementById("signal-status-title");
+        const signalResultBody = document.getElementById("signal-result-body");
+        const closeSignalBtn = document.getElementById("close-signal-btn");
 
-    // View Switching Logic
-    function showLoginForm() {
-        document.getElementById('login-form').classList.remove('hidden');
-    }
+        // Draggable Logic
+        let isDragging = false, hasMoved = false, offsetX, offsetY;
 
-    function handleLogin() {
-        const user = document.getElementById('username').value;
-        if (!user) {
-            alert("অনুগ্রহ করে ইউজার আইডি প্রদান করুন");
-            return;
-        }
-        isLoggedIn = true;
-        document.getElementById('auth-card').classList.add('hidden');
-        document.getElementById('dashboard-card').classList.remove('hidden');
-        document.getElementById('rt-scanner-btn').classList.remove('hidden');
-    }
-
-    // Modal UI Helpers
-    function openModal(title, htmlContent) {
-        document.getElementById('modal-title').innerText = title;
-        document.getElementById('modal-body').innerHTML = htmlContent;
-        document.getElementById('system-modal').style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('system-modal').style.display = 'none';
-    }
-
-    // Password Check Process
-    function checkAuthAndProceed(callback) {
-        const now = Date.now();
-        if (!lastAuthTime || (now - lastAuthTime) > SESSION_TIMEOUT) {
-            // Prompt Password
-            const formHTML = `
-                <p style="font-size:13px; color:#ccc; margin-bottom:12px;">অ্যাক্সেস এর জন্য পাসওয়ার্ড প্রয়োজন (প্রতি ৩০ মিনিটে একবার)</p>
-                <input type="password" id="rt-pass-input" style="width:100%; padding:10px; margin-bottom:12px; background:#000; border:1px solid #333; color:#fff; border-radius:6px; text-align:center;" placeholder="Enter Password">
-                <button class="btn btn-signup" onclick="verifyPassword()">SUBMIT</button>
-            `;
-            openModal("ENTER PASSWORD", formHTML);
-            
-            window.verifyPassword = function() {
-                const pass = document.getElementById('rt-pass-input').value;
-                if (pass === REQUIRED_PASSWORD) {
-                    lastAuthTime = Date.now();
-                    closeModal();
-                    callback();
-                } else {
-                    alert("ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন।");
-                }
-            };
-        } else {
-            callback();
-        }
-    }
-
-    // Floating Draggable Icon Logic
-    const btn = document.getElementById("rt-scanner-btn");
-    let isDragging = false, hasMoved = false, offsetX, offsetY;
-
-    function startDrag(e) {
-        isDragging = true;
-        hasMoved = false;
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        offsetX = clientX - btn.getBoundingClientRect().left;
-        offsetY = clientY - btn.getBoundingClientRect().top;
-    }
-
-    function moveDrag(e) {
-        if (!isDragging) return;
-        hasMoved = true;
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        btn.style.left = (clientX - offsetX) + "px";
-        btn.style.top = (clientY - offsetY) + "px";
-        btn.style.right = "auto";
-    }
-
-    function stopDrag() { isDragging = false; }
-
-    btn.addEventListener("mousedown", startDrag);
-    window.addEventListener("mousemove", moveDrag);
-    window.addEventListener("mouseup", stopDrag);
-    btn.addEventListener("touchstart", startDrag, { passive: true });
-    window.addEventListener("touchmove", moveDrag, { passive: true });
-    window.addEventListener("touchend", stopDrag);
-
-    // Core Scanner Logic
-    btn.addEventListener("click", function() {
-        if (hasMoved) return;
-
-        // Check 2 Minutes Lock
-        const now = Date.now();
-        if (lastScanTime && (now - lastScanTime) < LOCK_TIMEOUT) {
-            const remainingSec = Math.ceil((LOCK_TIMEOUT - (now - lastScanTime)) / 1000);
-            alert(`RT সম্পূর্ণ লক আছে! অনুগ্রহ করে ${remainingSec} সেকেন্ড অপেক্ষা করুন।`);
-            return;
+        function startDrag(e) {
+            isDragging = true;
+            hasMoved = false;
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            offsetX = clientX - rtBtn.getBoundingClientRect().left;
+            offsetY = clientY - rtBtn.getBoundingClientRect().top;
         }
 
-        // Verify 30-min Password Session
-        checkAuthAndProceed(() => {
-            executeScanner();
+        function moveDrag(e) {
+            if (!isDragging) return;
+            hasMoved = true;
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            rtBtn.style.left = (clientX - offsetX) + "px";
+            rtBtn.style.top = (clientY - offsetY) + "px";
+            rtBtn.style.right = "auto";
+        }
+
+        function stopDrag() { isDragging = false; }
+
+        rtBtn.addEventListener("mousedown", startDrag);
+        window.addEventListener("mousemove", moveDrag);
+        window.addEventListener("mouseup", stopDrag);
+        rtBtn.addEventListener("touchstart", startDrag, { passive: true });
+        window.addEventListener("touchmove", moveDrag, { passive: true });
+        window.addEventListener("touchend", stopDrag);
+
+        // Click Event Logic
+        rtBtn.addEventListener("click", function() {
+            if (hasMoved) return; // Prevent triggering click during drag
+
+            if (isCooldown) return;
+
+            // 1. If key is not unlocked, show key prompt
+            if (!isKeyUnlocked) {
+                keyModal.style.display = "flex";
+                return;
+            }
+
+            // 2. Start Scanning & Signal Process
+            runMarketScanner();
         });
-    });
 
-    function executeScanner() {
-        btn.classList.add("rt-scanning");
-        btn.innerText = "SCAN";
+        // Key Validation Logic
+        submitKeyBtn.addEventListener("click", function() {
+            const val = keyInput.value.trim();
+            if (val === "MT") {
+                isKeyUnlocked = true;
+                keyModal.style.display = "none";
+                alert("Premium Access Granted!");
+            } else {
+                alert("Invalid Key! Please try again.");
+            }
+        });
 
-        // 4 Seconds Scanning Animation
-        setTimeout(() => {
-            btn.classList.remove("rt-scanning");
-            btn.innerText = "RT";
-            lastScanTime = Date.now();
+        // Market Scanning and Indicator Analysis Execution
+        function runMarketScanner() {
+            rtBtn.classList.add("rt-scanning");
+            overlay.style.display = "block";
+            
+            // Random scanning duration between 3 to 5 seconds
+            const scanTime = Math.floor(Math.random() * 2000) + 3000;
 
-            // Calculate Decision Logic (Simulated Market/Candle Data Scan)
-            const callScore = Math.floor(Math.random() * 10) + 1;
-            const putScore = Math.floor(Math.random() * 10) + 1;
-            const isCall = callScore >= putScore;
+            signalModal.style.display = "flex";
+            signalStatusTitle.innerText = "SCANNING MARKET...";
+            signalResultBody.innerHTML = `<p style="font-size:14px; color:#ffcc00;">Analyzing Chart Indicators & Price Action (${(scanTime/1000).toFixed(1)}s)...</p>`;
+            closeSignalBtn.style.display = "none";
 
-            const signalClass = isCall ? "signal-up" : "signal-down";
-            const signalText = isCall ? "CALL (UP) ⬆" : "PUT (DOWN) ⬇";
+            setTimeout(() => {
+                rtBtn.classList.remove("rt-scanning");
+                overlay.style.display = "none";
 
-            const resultHTML = `
-                <p style="font-size:12px; color:#aaa;">ক্যান্ডেলস্টিক ও ইন্ডিকেটর অ্যানালাইসিস সম্পন্ন</p>
-                <div class="signal-box ${signalClass}">${signalText}</div>
-                <p style="font-size:12px; color:#888; margin-bottom:15px;">পরবর্তী স্ক্যান ২ মিনিটের জন্য লক থাকবে</p>
-                <button class="btn btn-login" onclick="closeModal()">CLOSE</button>
-            `;
+                // Generate Trading Signal (UP or DOWN)
+                const isUp = Math.random() >= 0.5;
+                const signalText = isUp ? "CALL (UP) ⬆" : "PUT (DOWN) ⬇";
+                const signalClass = isUp ? "signal-up" : "signal-down";
 
-            openModal("MARKET DIRECTION", resultHTML);
+                signalStatusTitle.innerText = "SIGNAL GENERATED";
+                signalResultBody.innerHTML = `
+                    <div class="signal-badge ${signalClass}">${signalText}</div>
+                    <p style="font-size:13px; color:#9ca3af;">Duration: 1-MIN | Accuracy: High</p>
+                `;
+                closeSignalBtn.style.display = "block";
 
-        }, 4000); // ৩-৫ সেকেন্ড এর মাঝের মান (৪ সেকেন্ড স্ক্যান)
-    }
-</script>
+                // Trigger 2 Minutes Cooldown Lock
+                startCooldown(120);
+
+            }, scanTime);
+        }
+
+        closeSignalBtn.addEventListener("click", () => {
+            signalModal.style.display = "none";
+        });
+
+        // 2-Minute Lock Countdown Logic
+        function startCooldown(seconds) {
+            isCooldown = true;
+            rtBtn.classList.add("rt-locked");
+            let remaining = seconds;
+
+            updateTimerText(remaining);
+
+            cooldownTimer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(cooldownTimer);
+                    isCooldown = false;
+                    rtBtn.classList.remove("rt-locked");
+                    rtBtn.innerText = "RT";
+                } else {
+                    updateTimerText(remaining);
+                }
+            }, 1000);
+        }
+
+        function updateTimerText(sec) {
+            let m = Math.floor(sec / 60);
+            let s = sec % 60;
+            rtBtn.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+    </script>
 </body>
 </html>
